@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Face-recognition attendance tracker powered by OpenCV and FastAPI">
+    <title>Attendance Tracker | Face Recognition</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Animated background -->
+    <div class="bg-grid"></div>
+
+    <!-- Toast container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Mobile toggle -->
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+
+    <!-- ─── Sidebar ──────────────────────────────────────────────────────── -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <h1>📋 AttendAI</h1>
+            <p>Face Recognition Tracker</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a class="nav-link active" data-page="dashboard" href="#">
+                <span class="icon">🏠</span> Dashboard
+            </a>
+            <a class="nav-link" data-page="register" href="#">
+                <span class="icon">➕</span> Register Face
+            </a>
+            <a class="nav-link" data-page="attendance" href="#">
+                <span class="icon">📷</span> Mark Attendance
+            </a>
+            <a class="nav-link" data-page="records" href="#">
+                <span class="icon">📊</span> Records
+            </a>
+            <a class="nav-link" data-page="users" href="#">
+                <span class="icon">👥</span> Registered Users
+            </a>
+        </nav>
+    </aside>
+
+    <!-- ─── Main Content ─────────────────────────────────────────────────── -->
+    <main class="main">
+
+        <!-- ─── Dashboard ────────────────────────────────────────────────── -->
+        <section id="page-dashboard" class="page active">
+            <div class="page-header">
+                <h2>Dashboard</h2>
+                <p>Welcome back! Here's a summary of your attendance system.</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card blue">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value" id="stat-users">–</div>
+                    <div class="stat-label">Registered Users</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon">✓</div>
+                    <div class="stat-value" id="stat-today">–</div>
+                    <div class="stat-label">Attendance Today</div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value" id="stat-total">–</div>
+                    <div class="stat-label">Total Records</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">⚡ Quick Actions</div>
+                <div class="quick-actions">
+                    <a class="quick-action" onclick="navigateTo('register')">
+                        <div class="qa-icon">➕</div>
+                        <div class="qa-title">Register New Face</div>
+                        <div class="qa-desc">Add a new person to the system</div>
+                    </a>
+                    <a class="quick-action" onclick="navigateTo('attendance')">
+                        <div class="qa-icon">📷</div>
+                        <div class="qa-title">Mark Attendance</div>
+                        <div class="qa-desc">Start face recognition</div>
+                    </a>
+                    <a class="quick-action" onclick="navigateTo('records')">
+                        <div class="qa-icon">📊</div>
+                        <div class="qa-title">View Records</div>
+                        <div class="qa-desc">Browse attendance history</div>
+                    </a>
+                    <a class="quick-action" onclick="navigateTo('users')">
+                        <div class="qa-icon">👥</div>
+                        <div class="qa-title">Manage Users</div>
+                        <div class="qa-desc">View & remove registered users</div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Register Face ────────────────────────────────────────────── -->
+        <section id="page-register" class="page">
+            <div class="page-header">
+                <h2>Register New Face</h2>
+                <p>Capture a face from your webcam to register a new user. Only the face encoding is stored — no images are saved.</p>
+            </div>
+
+            <div class="card" style="max-width: 700px">
+                <div class="form-group">
+                    <label for="register-name">Full Name</label>
+                    <input type="text" id="register-name" class="form-input" placeholder="e.g. John Doe" autocomplete="off">
+                </div>
+
+                <div class="webcam-container">
+                    <video id="register-video" autoplay playsinline style="display:none"></video>
+                    <div id="register-placeholder" class="webcam-placeholder">
+                        <span class="cam-icon">📷</span>
+                        <span>Click the button below to start camera</span>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button id="btn-start-register-cam" class="btn btn-outline" onclick="startRegisterCamera()">
+                        🎥 Start Camera
+                    </button>
+                    <button id="btn-capture" class="btn btn-primary" onclick="captureAndRegister()" disabled>
+                        📸 Capture & Register
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Mark Attendance ──────────────────────────────────────────── -->
+        <section id="page-attendance" class="page">
+            <div class="page-header">
+                <h2>Mark Attendance</h2>
+                <p>Start the camera to recognise faces and automatically record attendance.</p>
+            </div>
+
+            <div class="card" style="max-width: 700px">
+                <div class="webcam-container">
+                    <video id="recognize-video" autoplay playsinline style="display:none"></video>
+                    <canvas id="recognize-canvas" style="display:none"></canvas>
+                    <div id="recognize-placeholder" class="webcam-placeholder">
+                        <span class="cam-icon">📷</span>
+                        <span>Click the button below to begin recognition</span>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button id="btn-start-recognize" class="btn btn-success" onclick="startRecognition()">
+                        ▶ Start Recognition
+                    </button>
+                    <button id="btn-stop-recognize" class="btn btn-danger" onclick="stopRecognition()" style="display:none">
+                        ■ Stop
+                    </button>
+                </div>
+
+                <div id="recognition-status" class="recognition-status" style="display:none">
+                    <span class="pulse"></span>
+                    <span>Scanning for faces every 2 seconds…</span>
+                </div>
+
+                <div id="recognized-list" class="recognized-list"></div>
+            </div>
+        </section>
+
+        <!-- ─── Records ──────────────────────────────────────────────────── -->
+        <section id="page-records" class="page">
+            <div class="page-header">
+                <h2>Attendance Records</h2>
+                <p>View and filter all recorded attendance entries.</p>
+            </div>
+
+            <div class="card">
+                <div class="filter-bar">
+                    <label style="font-size:0.85rem; font-weight:600; color:var(--text-secondary)">Filter by date:</label>
+                    <input type="date" id="filter-date" class="form-input" style="width:auto; min-width:180px" onchange="loadRecords()">
+                    <button class="btn btn-outline btn-sm" onclick="document.getElementById('filter-date').value=''; loadRecords()">Clear</button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="records-tbody"></tbody>
+                    </table>
+                </div>
+
+                <div id="records-empty" class="empty-state" style="display:none">
+                    <div class="empty-icon">📭</div>
+                    <p>No attendance records found for the selected date.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Users ────────────────────────────────────────────────────── -->
+        <section id="page-users" class="page">
+            <div class="page-header">
+                <h2>Registered Users</h2>
+                <p>Manage all registered people in the system.</p>
+            </div>
+
+            <div class="card">
+                <div id="users-grid" class="users-grid"></div>
+
+                <div id="users-empty" class="empty-state" style="display:none">
+                    <div class="empty-icon">👤</div>
+                    <p>No users registered yet. <a href="#" onclick="navigateTo('register')" style="color: var(--accent-blue)">Register one now →</a></p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
